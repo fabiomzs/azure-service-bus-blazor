@@ -1,0 +1,59 @@
+﻿@inject MessageBusListenerService BusListener
+@rendermode InteractiveServer
+
+<div>
+	<button @onclick="StartListening" class="btn btn-primary w-25">
+		<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" hidden="@(!listening)"></span>
+		@(listening ? "Listening" : "Start Listening")
+	</button>
+	<button @onclick="StopListening" class="btn btn-danger w-25">Stop Listening</button>
+	<hr />
+
+	<div class="list-group">
+		@foreach (var message in messages)
+		{
+			<div class="list-group-item list-group-item-action">
+				<h6><strong>@message.Date</strong></h6>
+				<p>@message.Message</p>
+				<small>@message.Id</small>
+			</div>
+		}
+	</div>
+</div>
+
+@code {
+	private List<MessageModel> messages = new();
+	private bool listening = false;
+
+	protected override void OnInitialized()
+	{
+		BusListener.OnMessageReceived += HandleMessageReceived;
+	}
+
+	private void HandleMessageReceived(MessageModel message)
+	{
+		InvokeAsync(() =>
+		{
+			messages.Add(message);
+			StateHasChanged();
+		});
+	}
+
+	private async Task StartListening()
+	{
+		await BusListener.StartProcessingAsync();
+		listening = true;
+	}
+
+	private async Task StopListening()
+	{
+		await BusListener.StopProcessingAsync();
+		listening = false;
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		BusListener.OnMessageReceived -= HandleMessageReceived;
+		await BusListener.DisposeAsync();
+	}
+}

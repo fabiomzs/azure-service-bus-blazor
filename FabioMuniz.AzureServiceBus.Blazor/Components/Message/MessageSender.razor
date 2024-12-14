@@ -1,0 +1,45 @@
+﻿@inject ILogger<MessageSender> Logger
+@inject MessageBusSenderService Bus
+@rendermode InteractiveServer
+
+<EditForm FormName="service-bus-form" Model="Model" OnSubmit="Submit">
+	<div class="card" >
+
+		<div class="card-body">			
+			<div class="alert alert-info" role="alert">
+				@Model.Id
+			</div>
+			<label for="Model.Message" class="form-label">Message</label>
+			<InputText @bind-Value="Model.Message" class="form-control w-100" />
+			<br />			
+			<button class="btn btn-primary w-25" type="submit" disabled="@busy">
+				<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" hidden="@(!busy)"></span>
+				@(busy ? "Sending..." : "Send")
+			</button>
+		</div>
+	</div>
+
+</EditForm>
+
+
+@code {
+	[SupplyParameterFromForm]
+	private MessageModel Model { get; set; }
+
+	private bool busy = false;
+	
+
+	private async void Submit()
+	{
+		busy = !busy;
+		await Bus.SendMessageAsync(Model);
+		Model = new();
+		busy = !busy;
+		StateHasChanged();
+	}
+
+	protected override void OnInitialized()
+	{
+		Model ??= new();
+	}
+}
